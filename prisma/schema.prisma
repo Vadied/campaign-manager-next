@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime  @default(now())
+
+  masterCampaigns   Campaign[]       @relation("CampaignMaster")
+  campaignMembers   CampaignMember[]
+  sentInvites       CampaignInvite[]  @relation("Inviter")
+  notes             CampaignNote[]
+  characters        Character[]
+  pollVotes         SessionPollVote[]
+  sentMessages      PrivateMessage[]   @relation("MessageSender")
+  receivedMessages  PrivateMessage[]   @relation("MessageReceiver")
+}
+
+// DND | DAGGERHEART
+model Campaign {
+  id        String   @id @default(cuid())
+  name      String
+  game      String
+  masterId  String
+  master    User     @relation("CampaignMaster", fields: [masterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  members     CampaignMember[]
+  invites     CampaignInvite[]
+  notes       CampaignNote[]
+  sessions    Session[]
+  sessionPolls SessionPoll[]
+  characters  Character[]
+  assets      Asset[]
+  messages    PrivateMessage[]
+}
+
+model CampaignMember {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String   // PLAYER
+  joinedAt   DateTime @default(now())
+
+  @@unique([campaignId, userId])
+}
+
+model CampaignInvite {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email      String
+  inviterId  String
+  inviter    User     @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  token      String   @unique @default(cuid())
+  createdAt  DateTime @default(now())
+
+  @@unique([campaignId, email])
+}
+
+model CampaignNote {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title      String?
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  createdAt  DateTime @default(now())
+}
+
+model SessionPoll {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  closedAt   DateTime?
+
+  options    SessionPollOption[]
+}
+
+model SessionPollOption {
+  id       String       @id @default(cuid())
+  pollId   String
+  poll     SessionPoll  @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  dateTime DateTime
+  votes    SessionPollVote[]
+}
+
+model SessionPollVote {
+  id        String            @id @default(cuid())
+  optionId  String
+  option    SessionPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canAttend Boolean
+  createdAt DateTime          @default(now())
+
+  @@unique([optionId, userId])
+}
+
+model Character {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  game       String   // DND | DAGGERHEART
+  stats      String?  // JSON
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// IMAGE | NPC | PLACE - master only
+model Asset {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type        String
+  title       String
+  description String?
+  imagePath   String?
+  createdAt   DateTime @default(now())
+}
+
+model PrivateMessage {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  fromId     String
+  from       User     @relation("MessageSender", fields: [fromId], references: [id], onDelete: Cascade)
+  toId       String
+  to         User     @relation("MessageReceiver", fields: [toId], references: [id], onDelete: Cascade)
+  content    String
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+}
