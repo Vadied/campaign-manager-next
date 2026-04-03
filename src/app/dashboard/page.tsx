@@ -8,14 +8,27 @@ export default async function DashboardPage() {
   const session = await getSessionSafe();
   if (!session?.user) redirect("/login");
   const userId = (session.user as { id: string }).id;
-  const asMaster = await prisma.campaign.findMany({
-    where: { masterId: userId },
-    include: { master: { select: { name: true, email: true } } },
-  });
-  const asMember = await prisma.campaign.findMany({
-    where: { members: { some: { userId } } },
-    include: { master: { select: { name: true, email: true } } },
-  });
+  let asMaster: Awaited<ReturnType<typeof prisma.campaign.findMany>>;
+  let asMember: Awaited<ReturnType<typeof prisma.campaign.findMany>>;
+  try {
+    asMaster = await prisma.campaign.findMany({
+      where: { masterId: userId },
+      include: { master: { select: { name: true, email: true } } },
+    });
+    asMember = await prisma.campaign.findMany({
+      where: { members: { some: { userId } } },
+      include: { master: { select: { name: true, email: true } } },
+    });
+  } catch (err) {
+    console.error("Dashboard prisma error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("connect") || msg.includes("P1001") || msg.includes("P1017")) {
+      throw new Error(
+        "Database non raggiungibile. Verifica che DATABASE_URL in .env sia una connection string Postgres valida e che il database sia in esecuzione (o usa un servizio come Vercel Postgres / Neon)."
+      );
+    }
+    throw err;
+  }
   const all = [...asMaster, ...asMember.filter((c) => !asMaster.some((m) => m.id === c.id))];
   return (
     <div className="mx-auto max-w-4xl space-y-6">

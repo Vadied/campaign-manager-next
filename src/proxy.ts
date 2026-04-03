@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt";
 
 const protectedPaths = ["/dashboard", "/campaigns"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   let isAuth = false;
   try {

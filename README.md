@@ -22,8 +22,11 @@ Applicazione Next.js per gestire campagne di giochi di ruolo: **Dungeons & Drago
    Copia `.env.example` in `.env` e imposta `NEXTAUTH_SECRET` in produzione (es. `openssl rand -base64 32`).  
    Se vedi l'errore *decryption operation failed*, il cookie di sessione è stato creato con un altro segreto: apri DevTools → Application → Cookies → elimina `next-auth.session-token` per localhost e accedi di nuovo.
 
-2. **Database**  
-   SQLite (file `prisma/dev.db`):
+2. **Database (PostgreSQL / Vercel Postgres)**  
+   - **Produzione**: collega Vercel Postgres dal [Dashboard Vercel](https://vercel.com/dashboard) → Storage → Create Database → Postgres. Copia le variabili in `.env` (o vengono iniettate in deploy).  
+   - **Locale**: imposta `DATABASE_URL` con la connection string del database (stesso Vercel Postgres o un Postgres locale).
+
+   Poi:
 
    ```bash
    npm run db:generate
@@ -51,6 +54,7 @@ Applicazione Next.js per gestire campagne di giochi di ruolo: **Dungeons & Drago
 
 - Next.js 16 (App Router), React 19, TypeScript
 - Tailwind CSS 4
-- Prisma (SQLite)
+- Prisma (PostgreSQL / Vercel Postgres)
+- [@neondatabase/serverless](https://github.com/neondatabase/serverless) – client SQL raw per query one-shot/edge (opzionale, in `src/lib/neon.ts`)
 - NextAuth (credentials)
 - date-fns, zod
